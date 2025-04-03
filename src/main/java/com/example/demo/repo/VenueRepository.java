@@ -1,12 +1,10 @@
 package com.example.demo.repo;
 
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.demo.entity.Venue;
 
-public interface VenueRepository extends JpaRepository<Venue, Long> {
-    List<Venue> findByUserId(Long userId);
+public interface VenueRepository extends JpaRepository<Venue, String> {
+//    List<Venue> findByUserId(Long userId);
 }

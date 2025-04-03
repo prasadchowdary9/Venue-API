@@ -1,123 +1,92 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.*;
+import com.example.demo.entity.*;
+import com.example.demo.repo.VenueRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.example.demo.dto.AvailabilityDTO;
-import com.example.demo.dto.SlotDTO;
-import com.example.demo.dto.VenueDTO;
-import com.example.demo.entity.Availability;
-import com.example.demo.entity.Slot;
-import com.example.demo.entity.Venue;
-import com.example.demo.repo.AvailabilityRepository;
-import com.example.demo.repo.SlotRepository;
-import com.example.demo.repo.VenueRepository;
-
 @Service
 public class VenueService {
-
     @Autowired
     private VenueRepository venueRepository;
 
-    @Autowired
-    private AvailabilityRepository availabilityRepository;
-
-    @Autowired
-    private SlotRepository slotRepository;
-
-    // Create Venue with Availability and Slots
-    public Venue createVenue(VenueDTO venueDTO) {
-        Venue venue = new Venue();
-        venue.setName(venueDTO.getName());
-        venue.setLocation(venueDTO.getLocation());
-        venue.setCity(venueDTO.getCity());
-        venue.setDescription(venueDTO.getDescription());
-        venue.setImage(venueDTO.getImage());
-        venue.setImages(venueDTO.getImages());
-        venue.setPrice(venueDTO.getPrice());
-        venue.setCapacity(venueDTO.getCapacity());
-        venue.setAmenities(venueDTO.getAmenities());
-        venue.setRating(venueDTO.getRating());
-        venue.setReviewCount(venueDTO.getReviewCount());
-        venue.setFeatured(venueDTO.isFeatured());
-        venue.setUserId(venueDTO.getUserId());
-
-        Venue savedVenue = venueRepository.save(venue);
-
-        // Save Availability and Slots
-        if (venueDTO.getAvailabilityList() != null) {
-            for (AvailabilityDTO availabilityDTO : venueDTO.getAvailabilityList()) {
-                Availability availability = new Availability();
-                availability.setDate(availabilityDTO.getDate());
-                availability.setVenueId(savedVenue.getId());
-                Availability savedAvailability = availabilityRepository.save(availability);
-
-                if (availabilityDTO.getSlots() != null) {
-                    for (SlotDTO slotDTO : availabilityDTO.getSlots()) {
-                        Slot slot = new Slot();
-                        slot.setTime(slotDTO.getTime());
-                        slot.setAvailable(slotDTO.isAvailable());
-                        slot.setAvailabilityId(savedAvailability.getId());
-                        slotRepository.save(slot);
-                    }
-                }
-            }
-        }
-        return savedVenue;
-    }
-
-    // Get All Venues with Related Availability and Slots
     public List<VenueDTO> getAllVenues() {
         List<Venue> venues = venueRepository.findAll();
-        List<VenueDTO> venueDTOList = new ArrayList<>();
-
+        List<VenueDTO> venueDTOs = new ArrayList<>();
+        
         for (Venue venue : venues) {
-            VenueDTO venueDTO = new VenueDTO();
-            venueDTO.setId(venue.getId());
-            venueDTO.setName(venue.getName());
-            venueDTO.setLocation(venue.getLocation());
-            venueDTO.setCity(venue.getCity());
-            venueDTO.setDescription(venue.getDescription());
-            venueDTO.setImage(venue.getImage());
-            venueDTO.setImages(venue.getImages());
-            venueDTO.setPrice(venue.getPrice());
-            venueDTO.setCapacity(venue.getCapacity());
-            venueDTO.setAmenities(venue.getAmenities());
-            venueDTO.setRating(venue.getRating());
-            venueDTO.setReviewCount(venue.getReviewCount());
-            venueDTO.setFeatured(venue.isFeatured());
-
-            // Get Availabilities
-            List<Availability> availabilities = availabilityRepository.findByVenueId(venue.getId());
-            List<AvailabilityDTO> availabilityDTOList = new ArrayList<>();
-
-            for (Availability availability : availabilities) {
-                AvailabilityDTO availabilityDTO = new AvailabilityDTO();
-                availabilityDTO.setId(availability.getId());
-                availabilityDTO.setDate(availability.getDate());
-
-                // Get Slots for Availability
-                List<Slot> slots = slotRepository.findByAvailabilityId(availability.getId());
-                List<SlotDTO> slotDTOList = new ArrayList<>();
-                for (Slot slot : slots) {
-                    SlotDTO slotDTO = new SlotDTO();
-                    slotDTO.setId(slot.getId());
-                    slotDTO.setTime(slot.getTime());
-                    slotDTO.setAvailable(slot.isAvailable());
-                    slotDTO.setAvailabilityId(availability.getId());
-                    slotDTOList.add(slotDTO);
-                }
-
-                availabilityDTO.setSlots(slotDTOList);
-                availabilityDTOList.add(availabilityDTO);
-            }
-
-            venueDTO.setAvailabilityList(availabilityDTOList);
-            venueDTOList.add(venueDTO);
+            venueDTOs.add(convertToDTO(venue));
         }
-        return venueDTOList;
+        
+        return venueDTOs;
+    }
+
+    public VenueDTO createVenue(VenueDTO venueDTO) {
+        Venue venue = convertToEntity(venueDTO);
+        Venue savedVenue = venueRepository.save(venue);
+        return convertToDTO(savedVenue);
+    }
+
+    private VenueDTO convertToDTO(Venue venue) {
+        List<AvailabilityDTO> availabilityDTOs = new ArrayList<>();
+        
+        for (Availability availability : venue.getAvailability()) {
+            List<SlotDTO> slotDTOs = new ArrayList<>();
+            
+            for (Slot slot : availability.getSlots()) {
+                slotDTOs.add(new SlotDTO(slot.getTime(), slot.isAvailable()));
+            }
+            
+            availabilityDTOs.add(new AvailabilityDTO(availability.getDate(), slotDTOs));
+        }
+        
+        return new VenueDTO(
+                String.valueOf(venue.getId()), venue.getName(), venue.getLocation(), venue.getDescription(),
+                venue.getImage(), venue.getImages(), venue.getPrice(), venue.getCapacity(),
+                venue.getAmenities(), venue.getRating(), venue.getReviewCount(), availabilityDTOs,
+                venue.isFeatured(), venue.getCity()
+        );
+    }
+
+    private Venue convertToEntity(VenueDTO dto) {
+        Venue venue = new Venue();
+        venue.setName(dto.getName());
+        venue.setLocation(dto.getLocation());
+        venue.setDescription(dto.getDescription());
+        venue.setImage(dto.getImage());
+        venue.setImages(dto.getImages());
+        venue.setPrice(dto.getPrice());
+        venue.setCapacity(dto.getCapacity());
+        venue.setAmenities(dto.getAmenities());
+        venue.setRating(dto.getRating());
+        venue.setReviewCount(dto.getReviewCount());
+        venue.setFeatured(dto.isFeatured());
+        venue.setCity(dto.getCity());
+        
+        List<Availability> availabilityList = new ArrayList<>();
+        
+        for (AvailabilityDTO availabilityDTO : dto.getAvailability()) {
+            Availability availability = new Availability();
+            availability.setDate(availabilityDTO.getDate());
+            availability.setVenue(venue);
+            
+            List<Slot> slotList = new ArrayList<>();
+            for (SlotDTO slotDTO : availabilityDTO.getSlots()) {
+                Slot slot = new Slot();
+                slot.setTime(slotDTO.getTime());
+                slot.setAvailable(slotDTO.isAvailable());
+                slot.setAvailability(availability);
+                slotList.add(slot);
+            }
+            
+            availability.setSlots(slotList);
+            availabilityList.add(availability);
+        }
+        
+        venue.setAvailability(availabilityList);
+        return venue;
     }
 }

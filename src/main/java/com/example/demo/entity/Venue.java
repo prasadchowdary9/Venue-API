@@ -1,48 +1,42 @@
 package com.example.demo.entity;
 
-
-
 import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "venues")
 public class Venue {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    private Integer id;
     private String name;
     private String location;
-    private String city;
     private String description;
     private String image;
-    
+
     @ElementCollection
-    @CollectionTable(name = "venue_images", joinColumns = @JoinColumn(name = "venue_id"))
-    @Column(name = "image_url")
     private List<String> images;
 
     private double price;
     private int capacity;
 
     @ElementCollection
-    @CollectionTable(name = "venue_amenities", joinColumns = @JoinColumn(name = "venue_id"))
-    @Column(name = "amenity")
     private List<String> amenities;
 
     private double rating;
     private int reviewCount;
     private boolean featured;
+    private String city;
 
-    private Long userId; // User ID from frontend
+    @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Availability> availability;
 
-	public Long getId() {
+    public Venue() {}
+
+	public Integer getId() {
 		return id;
 	}
 
-	public void setId(Long id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 
@@ -60,14 +54,6 @@ public class Venue {
 
 	public void setLocation(String location) {
 		this.location = location;
-	}
-
-	public String getCity() {
-		return city;
-	}
-
-	public void setCity(String city) {
-		this.city = city;
 	}
 
 	public String getDescription() {
@@ -142,12 +128,20 @@ public class Venue {
 		this.featured = featured;
 	}
 
-	public Long getUserId() {
-		return userId;
+	public String getCity() {
+		return city;
 	}
 
-	public void setUserId(Long userId) {
-		this.userId = userId;
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public List<Availability> getAvailability() {
+		return availability;
+	}
+
+	public void setAvailability(List<Availability> availability) {
+		this.availability = availability;
 	}
 
     // Getters and Setters
