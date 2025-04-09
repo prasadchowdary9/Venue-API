@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VenueService {
@@ -22,6 +23,14 @@ public class VenueService {
         }
         
         return venueDTOs;
+    }
+    public VenueDTO getVenueById(Long id) {
+    	Optional<Venue> venue = venueRepository.findById(id);
+    	if(venue.isPresent()) {
+    		return convertToDTO(venue.get());
+    	}
+    	return new VenueDTO();
+    	
     }
 
     public VenueDTO createVenue(VenueDTO venueDTO) {

@@ -27,4 +27,10 @@ public class VenueController {
         VenueDTO createdVenue = venueService.createVenue(venueDTO);
         return ResponseEntity.ok(createdVenue);
     }
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<VenueDTO> getVenue(@PathVariable Long id) {
+        VenueDTO venue = venueService.getVenueById(id);
+        return ResponseEntity.ok(venue);
+    }
 }
